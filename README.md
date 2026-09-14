@@ -1,5 +1,14 @@
-# XML to Elasticsearch Importer
 
+
+BENZINANE Haitam
+
+LinkedIn: https://www.linkedin.com/in/haytambenz/
+
+I’m open to your feedback and any suggestions for improving the project.
+Thank you, Adelean, for this opportunity. I hope to meet your expectations.
+
+
+# XML to Elasticsearch 
 Ce projet a été réalisé dans le cadre d'un test technique.
 
 L'objectif est de lire les produits présents dans un fichier XML contenu dans une archive ZIP, puis de les indexer dans **Elasticsearch 7.4.1**.
