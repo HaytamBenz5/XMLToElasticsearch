@@ -11,14 +11,25 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.io.FilterInputStream;
+
+
 
 public class XmlZipProductReader {
 
+
+
+
+
     private static final String PRODUCT_TAG = "product";
 
-    public void read(Path zipPath) throws IOException, XMLStreamException {
+    public void read(
+            Path zipPath,
+            Consumer<Map<String, Object>> productConsumer
+    ) throws IOException, XMLStreamException {
 
         try (
                 InputStream fileInputStream = Files.newInputStream(zipPath);
@@ -45,7 +56,7 @@ public class XmlZipProductReader {
 
                 System.out.println("Processing XML file: " + entry.getName());
 
-                parseXml(zipInputStream);
+                parseXml(zipInputStream, productConsumer);
                 zipInputStream.closeEntry();
             }
         }
@@ -54,11 +65,12 @@ public class XmlZipProductReader {
 
 
 
-    private void parseXml(InputStream inputStream) throws XMLStreamException {
+    private void parseXml(InputStream inputStream, Consumer<Map<String, Object>> productConsumer) throws XMLStreamException { {
 
         XMLInputFactory factory = XMLInputFactory.newFactory();
 
-        XMLStreamReader reader = factory.createXMLStreamReader(inputStream);
+        InputStream xmlInputStream = new NonClosingInputStream(inputStream);
+        XMLStreamReader reader = factory.createXMLStreamReader(xmlInputStream);
 
         Map<String, Object> currentProduct = null;
         String currentField = null;
@@ -70,40 +82,46 @@ public class XmlZipProductReader {
 
             switch (event) {
 
-                case XMLStreamConstants.START_ELEMENT -> {
+                case XMLStreamConstants.START_ELEMENT: {
 
                     String elementName = reader.getLocalName();
 
                     if (PRODUCT_TAG.equals(elementName)) {
                         currentProduct = new LinkedHashMap<>();
-                    }
-                    else if (currentProduct != null) {
+                    } else if (currentProduct != null) {
                         currentField = elementName;
                         currentValue = new StringBuilder();
                     }
+
+                    break;
                 }
 
-                case XMLStreamConstants.CHARACTERS,XMLStreamConstants.CDATA -> {
+                case XMLStreamConstants.CHARACTERS:
+                case XMLStreamConstants.CDATA: {
 
                     if (currentProduct != null && currentField != null && currentValue != null) {
+
                         currentValue.append(reader.getText());
                     }
+
+                    break;
                 }
 
-                case XMLStreamConstants.END_ELEMENT -> {
+                case XMLStreamConstants.END_ELEMENT: {
 
                     String elementName = reader.getLocalName();
 
                     if (PRODUCT_TAG.equals(elementName)) {
 
-                        System.out.println(currentProduct);
+                        if (currentProduct != null) {
+                            productConsumer.accept(currentProduct);
+                        }
 
                         currentProduct = null;
                         currentField = null;
                         currentValue = null;
 
-                    }
-                    else if (currentProduct != null && currentField != null && currentField.equals(elementName)) {
+                    } else if (currentProduct != null && currentField != null && currentField.equals(elementName)) {
 
                         String value = currentValue.toString().trim();
 
@@ -114,12 +132,34 @@ public class XmlZipProductReader {
                         currentField = null;
                         currentValue = null;
                     }
+
+                    break;
                 }
 
-                default -> {}
+                default:
+                    break;
+
             }
 
 
         }
     }
+  }
+
+
+
+    private static class NonClosingInputStream extends FilterInputStream {
+
+        protected NonClosingInputStream(InputStream inputStream) {
+            super(inputStream);
+        }
+
+        @Override
+        public void close() {
+        }
+    }
+
+
+
+
 }
