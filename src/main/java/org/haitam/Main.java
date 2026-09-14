@@ -8,12 +8,13 @@ public class Main {
 
         Path zipPath = Path.of("xml.zip");
 
-        XmlZipProductReader reader =
-                new XmlZipProductReader();
+        XmlZipProductReader reader = new XmlZipProductReader();
 
-        reader.read(
-                zipPath,
-                product -> System.out.println(product)
-        );
+        try (ElasticsearchProductIndexer indexer = new ElasticsearchProductIndexer()) {
+
+            System.out.println( "Elasticsearch connected: " + indexer.isConnected());
+
+          //  reader.read(zipPath, product -> System.out.println(product));
+        }
     }
 }
