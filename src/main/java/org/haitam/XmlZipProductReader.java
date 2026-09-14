@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -58,19 +60,66 @@ public class XmlZipProductReader {
 
         XMLStreamReader reader = factory.createXMLStreamReader(inputStream);
 
+        Map<String, Object> currentProduct = null;
+        String currentField = null;
+        StringBuilder currentValue = null;
+
         while (reader.hasNext()) {
 
             int event = reader.next();
 
-            if (event == XMLStreamConstants.START_ELEMENT) {
+            switch (event) {
 
-                String elementName = reader.getLocalName();
+                case XMLStreamConstants.START_ELEMENT -> {
 
-                if (PRODUCT_TAG.equals(elementName)) {
+                    String elementName = reader.getLocalName();
 
-                    System.out.println("Product found");
+                    if (PRODUCT_TAG.equals(elementName)) {
+                        currentProduct = new LinkedHashMap<>();
+                    }
+                    else if (currentProduct != null) {
+                        currentField = elementName;
+                        currentValue = new StringBuilder();
+                    }
                 }
+
+                case XMLStreamConstants.CHARACTERS,XMLStreamConstants.CDATA -> {
+
+                    if (currentProduct != null && currentField != null && currentValue != null) {
+                        currentValue.append(reader.getText());
+                    }
+                }
+
+                case XMLStreamConstants.END_ELEMENT -> {
+
+                    String elementName = reader.getLocalName();
+
+                    if (PRODUCT_TAG.equals(elementName)) {
+
+                        System.out.println(currentProduct);
+
+                        currentProduct = null;
+                        currentField = null;
+                        currentValue = null;
+
+                    }
+                    else if (currentProduct != null && currentField != null && currentField.equals(elementName)) {
+
+                        String value = currentValue.toString().trim();
+
+                        if (!value.isEmpty()) {
+                            currentProduct.put(currentField, value);
+                        }
+
+                        currentField = null;
+                        currentValue = null;
+                    }
+                }
+
+                default -> {}
             }
+
+
         }
     }
 }
