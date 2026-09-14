@@ -54,7 +54,7 @@ public class XmlZipProductReader {
                     continue;
                 }
 
-                System.out.println("Processing XML file: " + entry.getName());
+                System.out.println("==> Processing XML file: " + entry.getName());
 
                 parseXml(zipInputStream, productConsumer);
                 zipInputStream.closeEntry();
